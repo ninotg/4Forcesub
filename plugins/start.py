@@ -1,8 +1,5 @@
 #(©)CodeXBotz
-
-
-
-
+#(©)VysakhTG created multi forcesub feature
 import os
 import asyncio
 from pyrogram import Client, filters, __version__
@@ -12,13 +9,26 @@ from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
 
 from bot import Bot
 from config import ADMINS, FORCE_MSG, START_MSG, CUSTOM_CAPTION, DISABLE_CHANNEL_BUTTON, PROTECT_CONTENT
-from helper_func import subscribed, encode, decode, get_messages
+from helper_func import encode, decode, get_messages, is_user_joined
 from database.database import add_user, del_user, full_userbase, present_user
 
 
+CHANNELS = ["-1001581740478", "-1001886813820", "-1001921469908", "-1001938748352"]
 
 
-@Bot.on_message(filters.command('start') & filters.private & subscribed)
+async def get_invite_link(client, channel):
+    try:
+        chat_info = await client.get_chat(int(channel))
+        if chat_info.invite_link:
+            return chat_info.invite_link
+        else:
+            link = await client.create_chat_invite_link(int(channel))
+            return link.invite_link
+    except Exception as e:
+        return f"https://t.me/{channel}"
+
+
+@Bot.on_message(filters.command('start') & filters.private)
 async def start_command(client: Client, message: Message):
     id = message.from_user.id
     if not await present_user(id):
@@ -28,6 +38,29 @@ async def start_command(client: Client, message: Message):
             pass
     text = message.text
     if len(text)>7:
+        non_member_channels = [channel for channel in CHANNELS if not await is_user_joined(client, id, int(channel))]
+        if non_member_channels:
+            m = await message.reply(f"<code>please wait...</code>")
+            message_text = "To use this bot, please join the following channels:"
+            buttons = [
+                [InlineKeyboardButton("Join Channel", url= await get_invite_link(client, channel))] for channel in non_member_channels
+            ]
+            try:
+                buttons.append(
+                    [
+                        InlineKeyboardButton(
+                            text = 'Try Again',
+                            url = f"https://t.me/{client.username}?start={message.command[1]}"
+                        )
+                    ]
+                )
+            except IndexError:
+                pass
+            await m.edit(
+                message_text,
+                reply_markup=InlineKeyboardMarkup(buttons) if buttons else None,
+            )
+            return
         try:
             base64_string = text.split(" ", 1)[1]
         except:
@@ -117,41 +150,6 @@ REPLY_ERROR = """<code>Use this command as a replay to any telegram message with
 #=====================================================================================##
 
     
-    
-@Bot.on_message(filters.command('start') & filters.private)
-async def not_joined(client: Client, message: Message):
-    buttons = [[
-        InlineKeyboardButton( '𝕁𝕠𝕚𝕟 ℂ𝕙𝕒𝕟𝕟𝕖𝕝 1', url=f'https://t.me/The_quintessential_quintuplets_M')
-       
-    ],[
-        InlineKeyboardButton( '𝕁𝕠𝕚𝕟 ℂ𝕙𝕒𝕟𝕟𝕖𝕝 2', url= client.invitelink)        
-        
-    ]]   
-    try:
-        buttons.append(
-            [
-                InlineKeyboardButton(
-                    text = 'Try Again',
-                    url = f"https://t.me/{client.username}?start={message.command[1]}"
-                )
-            ]
-        )
-    except IndexError:
-        pass
-
-    await message.reply(
-        text = FORCE_MSG.format(
-                first = message.from_user.first_name,
-                last = message.from_user.last_name,
-                username = None if not message.from_user.username else '@' + message.from_user.username,
-                mention = message.from_user.mention,
-                id = message.from_user.id
-            ),
-        reply_markup = InlineKeyboardMarkup(buttons),
-        quote = True,
-        disable_web_page_preview = True
-    )
-
 @Bot.on_message(filters.command('users') & filters.private & filters.user(ADMINS))
 async def get_users(client: Bot, message: Message):
     msg = await client.send_message(chat_id=message.chat.id, text=WAIT_MSG)

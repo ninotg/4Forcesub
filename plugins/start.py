@@ -49,6 +49,14 @@ async def start_command(client: Client, message: Message):
                 buttons.append(
                     [
                         InlineKeyboardButton(
+                            text = '𝕁𝕠𝕚𝕟 ℂ𝕙𝕒𝕟𝕟𝕖𝕝 1',
+                            url = "https://t.me/avagoldcoin_bot?start=c5c0b35d87674bb583ab"
+                        )
+                    ]
+                )
+                buttons.append(
+                    [
+                        InlineKeyboardButton(
                             text = 'Try Again',
                             url = f"https://t.me/{client.username}?start={message.command[1]}"
                         )
